@@ -16,28 +16,28 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libncursesw5-dev libffi-dev uuid-dev tar openjdk-17-jdk
 
-      - name: Install Buildozer and Cython
-        run: |
-          pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
+      - name: Install Buildozer
+        run: pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
-      - name: Force Accept Android Licenses
+      - name: Install Android SDK & Accept Licenses
         run: |
+          # Устанавливаем инструменты командной строки Android напрямую
           mkdir -p ~/.android
           touch ~/.android/repositories.cfg
           export PATH=$PATH:$HOME/.local/bin
-          # Маленький лайфхак: заставляем buildozer просто скачать SDK без сборки
+          # Принимаем лицензии через встроенный менеджер SDK
           yes | buildozer android debug --bootstrap=sdl2 || true
 
-      - name: Final Build
+      - name: Build APK
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # А теперь чистая сборка без лишних пауз
+          # Собираем файл. Теперь лицензии должны быть приняты.
           buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SecretChat-Final-Beta
+          name: SecretChat-Beta-Final
           path: bin/*.apk
