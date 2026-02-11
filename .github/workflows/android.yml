@@ -20,12 +20,13 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Принимаем лицензии и запускаем сборку
+          # Принудительно принимаем лицензии
           yes | buildozer android debug
-        continue-on-error: true
+        env:
+          ACCEPT_SDK_LICENSE: "y"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SecretChat-Beta
-          path: bin/*.apk
+          path: ./*.apk
