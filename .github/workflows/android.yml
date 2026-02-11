@@ -20,7 +20,8 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          buildozer android debug
+          # Эта команда примет все лицензии Google автоматически
+          yes | buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
 
@@ -29,5 +30,6 @@ jobs:
         with:
           name: package
           path: bin/*.apk
+
 
 
