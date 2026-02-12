@@ -14,20 +14,20 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          # Устанавливаем 32-битные либы (фикс для ошибки в логе 1000036359)
+          # Добавляем 32-битные либы (фикс ошибки Aidl cannot be executed)
           sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libncursesw5-dev libffi-dev uuid-dev tar openjdk-17-jdk lib32z1 lib32ncurses6 lib32stdc++6
           pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
-      - name: Force Fix SDK Structure
+      - name: Force Fix Android SDK Structure
         run: |
-          # 1. Ставим инструменты 31.0.0 через системный менеджер
+          # 1. Ставим инструменты 31.0.0
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platforms;android-31"
           
-          # 2. Создаем структуру папок вручную (фикс для 1000036346)
+          # 2. Создаем структуру папок вручную (фикс для лога 1000036346)
           mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
           mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/bin/
           
-          # 3. Копируем Aidl и sdkmanager на места, где их ждет Buildozer
+          # 3. Копируем Aidl и sdkmanager на места, где их ждет Buildozer (фикс 1000036365)
           cp $ANDROID_HOME/build-tools/31.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
           cp -r $ANDROID_HOME/cmdline-tools/latest/* /home/runner/.buildozer/android/platform/android-sdk/tools/
           
@@ -48,7 +48,8 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SecretChat-Final-Build
+          name: SecretChat-Verified-Build
           path: bin/*.apk
-          # Если файла не будет - билд УПАДЕТ КРАСНЫМ
+          # Если файла не будет - билд упадет КРАСНЫМ
           if-no-files-found: error
+
