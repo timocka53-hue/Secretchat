@@ -20,12 +20,16 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Принимаем лицензии и запускаем сборку
+          # ПРИНУДИТЕЛЬНЫЙ ФИКС AIDL:
+          mkdir -p ~/.buildozer/android/platform/android-sdk/build-tools/31.0.0
+          # Принимаем лицензии и запускаем
           yes | buildozer android debug
-        continue-on-error: true
+        env:
+          ACCEPT_SDK_LICENSE: "y"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SecretChat-Beta
+          name: SecretChat-Final
+          # Ищем именно в этой папке, куда он должен упасть
           path: bin/*.apk
