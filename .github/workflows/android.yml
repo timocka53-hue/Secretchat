@@ -22,14 +22,15 @@ jobs:
       - name: Build APK
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Просто запускаем сборку. Если спросит лицензии - ответит "да".
-          yes | buildozer android debug
+          # Сначала принудительно принимаем все лицензии Android SDK
+          yes | buildozer android debug --bootstrap=sdl2 || true
+          # Теперь запускаем саму сборку
+          buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SecretChat-Beta
+          name: SecretChat-Beta-Real
           path: bin/*.apk
-
