@@ -1,0 +1,44 @@
+name: Build APK
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libncursesw5-dev libffi-dev uuid-dev tar openjdk-17-jdk
+
+      - name: Install Buildozer
+        run: pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
+
+      - name: Pre-accept Licenses (The Fix)
+        run: |
+          mkdir -p ~/.android
+          touch ~/.android/repositories.cfg
+          # Мы заранее создаем папку лицензий и записываем туда хэши согласия
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
+          echo -e "24333f8a63b682569cc73d17f676e48396030c09\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd562630746b9433393a77167d551759a315ef3a4" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          # Принимаем системные лицензии напрямую
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Build APK
+        run: |
+          export PATH=$PATH:$HOME/.local/bin
+          # Запускаем сборку. Она займет около 15 минут.
+          buildozer android debug
+        env:
+          ACCEPT_SDK_LICENSE: "y"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecretChat-Beta-Final
+          path: bin/*.apk
