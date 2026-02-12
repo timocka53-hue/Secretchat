@@ -15,16 +15,16 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          # Установка базовых инструментов и 32-битных библиотек для фикса ошибки Aidl
+          # Установка 32-битных либ (lib32z1) — это прямое решение твоей ошибки
           sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libncursesw5-dev libffi-dev uuid-dev tar openjdk-17-jdk lib32z1 lib32ncurses6 lib32stdc++6
           pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
-      - name: Force SDK Configuration
+      - name: Force Fix SDK for Aidl
         run: |
-          # 1. Загружаем нужные компоненты SDK напрямую
+          # 1. Скачиваем инструменты через системный менеджер (версия 31.0.0 как в логах)
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platforms;android-31" "platform-tools"
           
-          # 2. Создаем структуру папок, которую требует Buildozer (фикс ошибки "does not exist")
+          # 2. Создаем структуру папок, которую требует Buildozer
           mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/bin/
           mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
           
@@ -33,25 +33,24 @@ jobs:
           cp -r $ANDROID_HOME/cmdline-tools/latest/bin/* /home/runner/.buildozer/android/platform/android-sdk/tools/bin/ || true
           cp $ANDROID_HOME/build-tools/31.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
           
-          # 4. ВАЖНО: Даем права на запуск (фикс ошибки исполнения из лога #58)
+          # 4. ВАЖНО: Даем права на исполнение (чтобы не было ошибки Executed)
           chmod +x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
           chmod +x /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/aidl
           
-          # 5. Принимаем все лицензии
+          # 5. Принимаем лицензии
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Запуск сборки дебаг-версии APK
+          # Запуск сборки дебаг-версии
           buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GhostChat-Success-Build
+          name: GhostChat-Release
           path: bin/*.apk
-          # Если файл не создастся, мы сразу это увидим
           if-no-files-found: error
