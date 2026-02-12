@@ -17,18 +17,16 @@ jobs:
           sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libncursesw5-dev libffi-dev uuid-dev tar openjdk-17-jdk
           pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
-      - name: Fix Aidl & License
+      - name: Force Install Working SDK
         run: |
-          # Принудительно ставим build-tools 31.0.0 (там Aidl на месте)
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platforms;android-31"
-          # Прописываем путь к Aidl в PATH, чтобы Buildozer его видел везде
-          echo "$ANDROID_HOME/build-tools/31.0.0" >> $GITHUB_PATH
+          # Принудительно ставим стабильные build-tools 31.0.0, где точно есть Aidl
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platforms;android-31" "platform-tools"
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Запуск. Если билд идет меньше 12-15 минут — значит APK не будет.
+          # Прямо указываем Buildozer путь к установленным инструментам
           buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
@@ -36,7 +34,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SecretChat-Final-Build
+          name: SecretChat-Final-APK
           path: bin/*.apk
-          # САМОЕ ВАЖНОЕ: если файла нет, билд станет КРАСНЫМ, а не зеленым
+          # Это заставит билт СТАТЬ КРАСНЫМ, если файл реально потерялся
           if-no-files-found: error
