@@ -19,16 +19,22 @@ jobs:
       - name: Install Buildozer
         run: pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
-      - name: Fix Aidl and Licenses
+      - name: FIX AIDL AND LICENSES (FORCE)
         run: |
-          # Принудительно ставим build-tools 31.0.0 и принимаем все лицензии напрямую
+          # 1. Принудительно ставим нужные инструменты
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platform-tools" "platforms;android-31"
+          
+          # 2. Создаем "костыль" для Buildozer, чтобы он нашел Aidl там, где ожидает
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
+          cp $ANDROID_HOME/build-tools/31.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/ || true
+          
+          # 3. Принимаем лицензии "железобетонно"
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Build with Buildozer
+      - name: Build APK
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Запуск чистой сборки
+          # Запускаем саму сборку
           buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
@@ -36,5 +42,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SecretChat-Release-Candidate
+          name: SecretChat-PRO-Beta
           path: bin/*.apk
