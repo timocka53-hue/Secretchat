@@ -17,19 +17,24 @@ jobs:
           sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libncursesw5-dev libffi-dev uuid-dev tar openjdk-17-jdk
           pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
+      - name: Fix Aidl & SDK
+        run: |
+          # Ставим конкретную версию инструментов, где точно есть aidl
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platforms;android-31"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # ПРИНУДИТЕЛЬНЫЙ ФИКС AIDL:
-          mkdir -p ~/.buildozer/android/platform/android-sdk/build-tools/31.0.0
-          # Принимаем лицензии и запускаем
-          yes | buildozer android debug
+          # Собираем. Жди МИНИМУМ 15 МИНУТ. Если быстрее - значит ошибка.
+          buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SecretChat-Final
-          # Ищем именно в этой папке, куда он должен упасть
+          name: Real-APK-File
           path: bin/*.apk
+          # Если файла не будет - билд УПАДЕТ, а не будет гореть зеленым
+          if-no-files-found: error
