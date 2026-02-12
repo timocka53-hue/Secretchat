@@ -19,22 +19,21 @@ jobs:
       - name: Install Buildozer
         run: pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
-      - name: FIX AIDL AND LICENSES (FORCE)
+      - name: Fix Aidl & Licenses (Brute Force)
         run: |
-          # 1. Принудительно ставим нужные инструменты
+          mkdir -p ~/.android
+          touch ~/.android/repositories.cfg
+          # Принудительно ставим инструменты версии 31.0.0 (стабильная для Aidl)
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platform-tools" "platforms;android-31"
-          
-          # 2. Создаем "костыль" для Buildozer, чтобы он нашел Aidl там, где ожидает
-          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
-          cp $ANDROID_HOME/build-tools/31.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/ || true
-          
-          # 3. Принимаем лицензии "железобетонно"
+          # Насильно создаем файлы лицензий, чтобы Buildozer их не искал
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
+          echo -e "24333f8a63b682569cc73d17f676e48396030c09\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd562630746b9433393a77167d551759a315ef3a4" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build APK
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Запускаем саму сборку
+          # Собираем без очистки, чтобы не сбросить настройки
           buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
@@ -44,3 +43,4 @@ jobs:
         with:
           name: SecretChat-PRO-Beta
           path: bin/*.apk
+
