@@ -14,25 +14,25 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          # Устанавливаем 32-битные либы (фикс ошибки "Aidl cannot be executed" из лога 1000036359)
+          # Устанавливаем 32-битные либы (фикс ошибки исполнения Aidl)
           sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libncursesw5-dev libffi-dev uuid-dev tar openjdk-17-jdk lib32z1 lib32ncurses6 lib32stdc++6
           pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
-      - name: Force Fix SDK and Permissions
+      - name: Force Fix SDK Paths and Permissions
         run: |
           # 1. Скачиваем инструменты через системный менеджер
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platforms;android-31" "platform-tools"
           
-          # 2. Создаем структуру папок, которую требует Buildozer (фикс ошибки 1000036365)
+          # 2. Создаем структуру папок, которую требует Buildozer
           mkdir -p /home/runner/.buildozer/android/platform/android-sdk/tools/bin/
           mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
           
-          # 3. Копируем файлы на места
+          # 3. Копируем файлы туда, где их ищет Buildozer
           cp -r $ANDROID_HOME/cmdline-tools/latest/* /home/runner/.buildozer/android/platform/android-sdk/tools/
           cp -r $ANDROID_HOME/cmdline-tools/latest/bin/* /home/runner/.buildozer/android/platform/android-sdk/tools/bin/ || true
           cp $ANDROID_HOME/build-tools/31.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
           
-          # 4. ДАЕМ ПРАВА НА ЗАПУСК (фикс ошибки 1000036367)
+          # 4. ДАЕМ ПРАВА НА ЗАПУСК (фикс ошибки "cannot be executed")
           chmod +x /home/runner/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
           chmod +x /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/aidl
           
@@ -42,7 +42,7 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Запуск. Теперь права есть, библиотеки на месте, пути созданы.
+          # Теперь у него есть и файл, и права, и библиотеки
           buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
@@ -52,5 +52,5 @@ jobs:
         with:
           name: GhostChat-Success-Build
           path: bin/*.apk
-          # Теперь билд упадет КРАСНЫМ, если APK не будет (фикс ложной победы #31)
+          # Если файла не будет - билд упадет КРАСНЫМ
           if-no-files-found: error
