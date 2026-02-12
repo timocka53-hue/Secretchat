@@ -20,7 +20,7 @@ jobs:
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Только одна команда на сборку с авто-принятием лицензий
+          # Принудительное согласие с лицензиями и запуск сборки
           yes | buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
