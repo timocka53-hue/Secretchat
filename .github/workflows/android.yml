@@ -17,19 +17,22 @@ jobs:
           sudo apt install -y build-essential git python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev libgstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good libsqlite3-dev sqlite3 bzip2 libbz2-dev libssl-dev openssl libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev libncursesw5-dev libffi-dev uuid-dev tar openjdk-17-jdk
           pip install --user --upgrade Cython==0.29.33 buildozer virtualenv
 
-      - name: Force Install Working SDK & Aidl
+      - name: Force Install and Copy Aidl
         run: |
-          # Принудительно ставим стабильные инструменты 31.0.0, где точно есть aidl
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platforms;android-31" "platform-tools"
-          # Прописываем путь к aidl в системный PATH билда, чтобы Buildozer его видел
-          echo "$ANDROID_HOME/build-tools/31.0.0" >> $GITHUB_PATH
-          # Принимаем все лицензии заранее
+          # 1. Ставим нужные инструменты через системный менеджер
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-tools;31.0.0" "platforms;android-31"
+          
+          # 2. ЖЕСТКИЙ КОСТЫЛЬ: Создаем папку, где Buildozer ИМЕННО ЖДЕТ Aidl, и копируем его туда
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
+          cp $ANDROID_HOME/build-tools/31.0.0/aidl /home/runner/.buildozer/android/platform/android-sdk/build-tools/31.0.0/
+          
+          # 3. Принимаем лицензии
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build with Buildozer
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Запускаем сборку. Она ДОЛЖНА идти 15-20 минут.
+          # Теперь он обязан увидеть файл по этому пути
           buildozer android debug
         env:
           ACCEPT_SDK_LICENSE: "y"
@@ -37,7 +40,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Real-SecretChat-APK
+          name: SecretChat-Fixed-Aidl
           path: bin/*.apk
-          # САМОЕ ВАЖНОЕ: если файла нет, билд СТАНЕТ КРАСНЫМ, а не будет врать зеленым
           if-no-files-found: error
