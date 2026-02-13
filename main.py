@@ -2,7 +2,6 @@ import os, json, certifi, pyrebase
 from kivy.app import App
 from kivy.utils import platform
 from kivy.clock import Clock
-from kivy.uix.label import Label
 
 os.environ['SSL_CERT_FILE'] = certifi.where()
 
@@ -41,21 +40,18 @@ else:
 class GhostApp(App):
     def build(self):
         Clock.schedule_once(self.create_webview, 0.5)
-        return Label(text="GHOST CORE LOADING...", color=(0,1,0,1))
+        return None
 
     @run_on_ui_thread
     def create_webview(self, dt):
-        try:
-            self.wv = WebView(Activity)
-            self.wv.getSettings().setJavaScriptEnabled(True)
-            self.wv.getSettings().setDomStorageEnabled(True)
-            self.wv.setWebViewClient(WebViewClient())
-            self.interface = JSInterface(self.on_js)
-            self.wv.addJavascriptInterface(self.interface, "Kivy")
-            self.wv.loadUrl("file:///android_asset/index.html")
-            Activity.setContentView(self.wv)
-        except Exception as e:
-            print(f"WEBVIEW_ERROR: {e}")
+        self.wv = WebView(Activity)
+        self.wv.getSettings().setJavaScriptEnabled(True)
+        self.wv.getSettings().setDomStorageEnabled(True)
+        self.wv.setWebViewClient(WebViewClient())
+        self.interface = JSInterface(self.on_js)
+        self.wv.addJavascriptInterface(self.interface, "Kivy")
+        self.wv.loadUrl("file:///android_asset/index.html")
+        Activity.setContentView(self.wv)
 
     def on_js(self, action, data_json):
         if not auth: return
@@ -63,17 +59,17 @@ class GhostApp(App):
         e, p = d.get('e'), d.get('p')
         try:
             if action == 'register':
-                u = auth.create_user_with_email_and_password(e, p)
-                auth.send_email_verification(u['idToken'])
-                self.run_js(f"log('Письмо отправлено на {e}')")
+                user = auth.create_user_with_email_and_password(e, p)
+                auth.send_email_verification(user['idToken'])
+                self.run_js(f"log('2FA: Письмо отправлено на {e}')")
             elif action == 'login':
-                u = auth.sign_in_with_email_and_password(e, p)
-                if auth.get_account_info(u['idToken'])['users'][0]['emailVerified']:
-                    self.run_js("log('ДОСТУП ОТКРЫТ', '#0f0')")
+                user = auth.sign_in_with_email_and_password(e, p)
+                if auth.get_account_info(user['idToken'])['users'][0]['emailVerified']:
+                    self.run_js("log('ДОСТУП РАЗРЕШЕН', '#0f0')")
                 else:
-                    self.run_js("log('Подтвердите Email!', '#ff0')")
+                    self.run_js("log('Сначала подтвердите почту!', '#ff0')")
         except Exception as ex:
-            self.run_js(f"log('Ошибка: {str(ex)[:30]}...', '#f00')")
+            self.run_js(f"log('Ошибка: {str(ex)[:40]}', '#f00')")
 
     @run_on_ui_thread
     def run_js(self, code):
