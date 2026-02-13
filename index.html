@@ -2,49 +2,52 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; margin: 0; overflow: hidden; }
-        canvas { position: fixed; top: 0; left: 0; z-index: -1; }
-        .ui { padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
-        .out { flex-grow: 1; border: 1px solid #0f0; margin-bottom: 10px; padding: 10px; overflow-y: auto; background: rgba(0,10,0,0.9); }
-        input { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; margin-bottom: 5px; width: 100%; box-sizing: border-box; }
-        button { background: #0f0; color: #000; border: none; padding: 15px; font-weight: bold; width: 100%; }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.3; }
+        .ui { position: relative; z-index: 1; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        .terminal { flex-grow: 1; overflow-y: auto; border: 1px solid #0f0; padding: 10px; background: rgba(0,5,0,0.9); box-shadow: 0 0 15px #0f0; margin-bottom: 10px; }
+        input { background: #000; border: 1px solid #0f0; color: #0f0; padding: 12px; width: 100%; box-sizing: border-box; margin-bottom: 8px; outline: none; }
+        .btn { background: #66ff66; color: #000; border: none; padding: 15px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; text-transform: uppercase; }
     </style>
 </head>
 <body>
-    <canvas id="m"></canvas>
+    <canvas id="matrix"></canvas>
     <div class="ui">
-        <div class="out" id="o">> Ghost_Dev_System_v1.3...</div>
-        <input type="email" id="e" placeholder="EMAIL">
-        <input type="password" id="p" placeholder="PASSWORD">
-        <button onclick="send('register')">REG (2FA)</button>
-        <button onclick="send('login')" style="margin-top:5px; background:#002200; color:#0f0; border:1px solid #0f0;">LOGIN</button>
+        <div style="color:#0f0; margin-bottom:5px;">GHOST_OS: ENCRYPTED_LINK</div>
+        <div class="terminal" id="output">
+            <div>[SYSTEM]: Ожидание авторизации...</div>
+        </div>
+        <input type="email" id="email" placeholder="EMAIL_ADDRESS">
+        <input type="password" id="pass" placeholder="ACCESS_PASSWORD">
+        <button class="btn" onclick="send('register')">REGISTRATION</button>
+        <button class="btn" style="background:#33cc33;" onclick="send('login')">LOG_IN</button>
     </div>
     <script>
-        const c = document.getElementById('m'), x = c.getContext('2d');
-        c.width = window.innerWidth; c.height = window.innerHeight;
-        const d = Array(Math.floor(c.width/20)).fill(1);
+        const canvas = document.getElementById('matrix'), ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const drops = Array(Math.floor(canvas.width / 18)).fill(1);
         function draw() {
-            x.fillStyle = "rgba(0,0,0,0.05)"; x.fillRect(0,0,c.width,c.height);
-            x.fillStyle = "#0f0"; x.font = "15px monospace";
-            d.forEach((y, i) => {
-                x.fillText(Math.floor(Math.random()*2), i*20, y*20);
-                if(y*20 > c.height && Math.random() > 0.975) d[i] = 0;
-                d[i]++;
+            ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = "#0f0"; ctx.font = "15px monospace";
+            drops.forEach((y, i) => {
+                ctx.fillText(Math.floor(Math.random()*2), i*18, y*18);
+                if (y*18 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
             });
         }
-        setInterval(draw, 40);
-        function send(a) {
-            const data = {e: document.getElementById('e').value, p: document.getElementById('p').value};
-            if(window.Kivy) Kivy.send_to_python(a, JSON.stringify(data));
+        setInterval(draw, 33);
+        function send(act) {
+            const d = {e: document.getElementById('email').value, p: document.getElementById('pass').value};
+            if (window.Kivy) Kivy.send_to_python(act, JSON.stringify(d));
         }
-        function log(t, col="#0f0") {
-            const el = document.getElementById('o'), div = document.createElement('div');
-            div.style.color = col; div.innerText = "> " + t;
-            el.appendChild(div); el.scrollTop = el.scrollHeight;
+        function log(t, color="#0f0") {
+            const out = document.getElementById('output');
+            const div = document.createElement('div');
+            div.style.color = color; div.innerText = "> " + t;
+            out.appendChild(div); out.scrollTop = 9999;
         }
     </script>
 </body>
 </html>
-
