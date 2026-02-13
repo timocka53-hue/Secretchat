@@ -2,10 +2,10 @@ import os, json, certifi, pyrebase
 from kivy.app import App
 from kivy.utils import platform
 from kivy.clock import Clock
+from kivy.uix.label import Label
 
 os.environ['SSL_CERT_FILE'] = certifi.where()
 
-# Данные из твоего google-services.json
 firebase_config = {
     "apiKey": "AIzaSyAbiRCuR9egtHKg0FNzzBdL9dNqPqpPLNk",
     "authDomain": "ghost-pro-5aa22.firebaseapp.com",
@@ -16,8 +16,10 @@ firebase_config = {
     "databaseURL": ""
 }
 
-firebase = pyrebase.initialize_app(firebase_config)
-auth = firebase.auth()
+try:
+    auth = pyrebase.initialize_app(firebase_config).auth()
+except:
+    auth = None
 
 if platform == 'android':
     from android.runnable import run_on_ui_thread
@@ -28,59 +30,55 @@ if platform == 'android':
 
     class JSInterface(PythonJavaClass):
         __javainterfaces__ = ['java/lang/Object']
-        def __init__(self, callback):
+        def __init__(self, cb):
             super().__init__()
-            self.callback = callback
+            self.cb = cb
         @java_method('(Ljava/lang/String;Ljava/lang/String;)V')
-        def send_to_python(self, action, data):
-            self.callback(action, data)
+        def send_to_python(self, a, d): self.cb(a, d)
 else:
     def run_on_ui_thread(f): return f
 
 class GhostApp(App):
     def build(self):
         Clock.schedule_once(self.create_webview, 0.5)
-        return None
+        return Label(text="GHOST CORE LOADING...", color=(0,1,0,1))
 
     @run_on_ui_thread
     def create_webview(self, dt):
-        self.webview = WebView(Activity)
-        s = self.webview.getSettings()
-        s.setJavaScriptEnabled(True)
-        s.setDomStorageEnabled(True)
-        s.setAllowFileAccess(True)
-        self.webview.setWebViewClient(WebViewClient())
-        self.interface = JSInterface(self.on_js_call)
-        self.webview.addJavascriptInterface(self.interface, "Kivy")
-        self.webview.loadUrl("file:///android_asset/index.html")
-        Activity.setContentView(self.webview)
+        try:
+            self.wv = WebView(Activity)
+            self.wv.getSettings().setJavaScriptEnabled(True)
+            self.wv.getSettings().setDomStorageEnabled(True)
+            self.wv.setWebViewClient(WebViewClient())
+            self.interface = JSInterface(self.on_js)
+            self.wv.addJavascriptInterface(self.interface, "Kivy")
+            self.wv.loadUrl("file:///android_asset/index.html")
+            Activity.setContentView(self.wv)
+        except Exception as e:
+            print(f"WEBVIEW_ERROR: {e}")
 
-    def on_js_call(self, action, data_json):
-        data = json.loads(data_json)
-        e, p = data.get('e'), data.get('p')
-
-        if action == 'register':
-            try:
-                user = auth.create_user_with_email_and_password(e, p)
-                auth.send_email_verification(user['idToken'])
-                self.run_js(f"log('2FA: Письмо отправлено на {e}')")
-            except Exception as ex:
-                self.run_js(f"log('Ошибка: {str(ex)}', '#f00')")
-
-        elif action == 'login':
-            try:
-                user = auth.sign_in_with_email_and_password(e, p)
-                info = auth.get_account_info(user['idToken'])
-                if info['users'][0]['emailVerified']:
-                    self.run_js("log('ДОСТУП РАЗРЕШЕН. Ghost онлайн.', '#0f0')")
+    def on_js(self, action, data_json):
+        if not auth: return
+        d = json.loads(data_json)
+        e, p = d.get('e'), d.get('p')
+        try:
+            if action == 'register':
+                u = auth.create_user_with_email_and_password(e, p)
+                auth.send_email_verification(u['idToken'])
+                self.run_js(f"log('Письмо отправлено на {e}')")
+            elif action == 'login':
+                u = auth.sign_in_with_email_and_password(e, p)
+                if auth.get_account_info(u['idToken'])['users'][0]['emailVerified']:
+                    self.run_js("log('ДОСТУП ОТКРЫТ', '#0f0')")
                 else:
-                    self.run_js("log('Подтвердите Email для входа!', '#ff0')")
-            except Exception as ex:
-                self.run_js(f"log('Вход запрещен: {str(ex)}', '#f00')")
+                    self.run_js("log('Подтвердите Email!', '#ff0')")
+        except Exception as ex:
+            self.run_js(f"log('Ошибка: {str(ex)[:30]}...', '#f00')")
 
     @run_on_ui_thread
     def run_js(self, code):
-        self.webview.evaluateJavascript(code, None)
+        try: self.wv.evaluateJavascript(code, None)
+        except: pass
 
 if __name__ == "__main__":
     GhostApp().run()
